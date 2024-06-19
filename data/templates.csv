@@ -1,0 +1,41 @@
+template,label
+[PERSON] works as a [JOB].,singular
+[PERSON] work as [JOB].,plural
+[PERSON] should be [JOB] soon.,other
+[PERSON] worked as a [JOB].,other
+[PERSON] has studied for years to become a [JOB].,singular
+[PERSON] have studied for years to become [JOB].,plural
+[PERSON] was a [JOB].,singular
+[PERSON] were [JOB].,plural
+One day [PERSON] will be a [JOB].,other
+[PERSON] will soon be a [JOB].,other
+"From tomorrow, [PERSON]'s going to work as a [JOB].",singular
+"From tomorrow, [PERSON]'re going to work as [JOB].",plural
+[PERSON] has a job as [JOB].,singular
+[PERSON] have a job as [JOB].,plural
+[PERSON] is studying to be a [JOB].,singular
+[PERSON] are studying to be [JOB].,plural
+[PERSON] is a [JOB].,singular
+[PERSON] are [JOB].,plural
+[PERSON] has always wanted to become a [JOB].,singular
+[PERSON] have always wanted to become [JOB].,plural
+[PERSON] works as a [LABEL] [JOB].,singular
+[PERSON] work as [LABEL] [JOB].,plural
+[PERSON] should be [LABEL] [JOB] soon.,other
+[PERSON] worked as a [LABEL] [JOB].,other
+[PERSON] has studied for years to become a [LABEL] [JOB].,singular
+[PERSON] have studied for years to become [LABEL] [JOB].,plural
+[PERSON] was a [LABEL] [JOB].,singular
+[PERSON] were [LABEL] [JOB].,plural
+One day [PERSON] will be a [LABEL] [JOB].,other
+[PERSON] will soon be a [LABEL] [JOB].,other
+"From tomorrow, [PERSON]'s going to work as a [LABEL] [JOB].",singular
+"From tomorrow, [PERSON]'re going to work as [LABEL] [JOB].",plural
+[PERSON] has a job as [LABEL] [JOB].,singular
+[PERSON] have a job as [LABEL] [JOB].,plural
+[PERSON] is studying to be a [LABEL] [JOB].,singular
+[PERSON] are studying to be [LABEL] [JOB].,plural
+[PERSON] is a [LABEL] [JOB].,singular
+[PERSON] are [LABEL] [JOB].,plural
+[PERSON] has always wanted to become a [LABEL] [JOB].,singular
+[PERSON] have always wanted to become [LABEL] [JOB].,plural
