@@ -1,0 +1,8 @@
+pandas
+nlp_synt_data
+ollama
+dataset
+transformers
+torch
+matplotlib
+seaborn

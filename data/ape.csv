@@ -1,0 +1,2 @@
+prompt,label
+Generate 10 variations of the following instruction while keeping the semantic meaning: fill the mask [PERSON] with a single word,fill-mask

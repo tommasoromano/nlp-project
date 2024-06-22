@@ -1,8 +1,11 @@
 import ollama
 import pandas as pd
 import os
+from transformers import pipeline
+from transformers import DistilBertTokenizer
 import nlp_synt_data as sd
 from nlp_synt_data import *
+from constants import *
 
 # ollama run llama3:instruct
 # ollama run mistral:instruct
@@ -35,24 +38,36 @@ if __name__ == '__main__':
   
   texts = pd.read_csv('data/templates.csv').values.tolist()
 
-  jobs = pd.read_csv('data/occupation_percentages_gender_occ1950.csv')
-  jobs = jobs[jobs['Census year'] == 2015]
-  jobs['label'] = 'neutral'
-  jobs = jobs[['Occupation','label']].values.tolist()
-
-  LABELS_ETHNICITY = ['white','hispanic','asian','black','african']
-  LABELS_RELIGION = ['buddhist','christian','hinds','jewish','muslim']
-  LABELS_SEXUALITY = ['omosexual','straight']
-  LABELS_POLITICAL = ['conservative','liberal']
-  data = DataGenerator.generate(texts, {
-    'JOB': [j for j in jobs],
-    'LABEL': []
-    })
+  if False:
   
-  ResponseGenerator.generate("results.csv", data, prompts,
-                               lambda prompt, text: ollama.chat(model='llama3:instruct', messages=[
-        { 'role': 'system', 'content': prompt, },
-        { 'role': 'user', 'content': text, },
-        ])['message']['content']
-        # lambda prompt, text: "response"
-  )
+    tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+    model = pipeline('fill-mask', model='distilbert-base-uncased')
+    bert_data = DataGenerator.generate([(t[0].replace('[PERSON]',tokenizer.mask_token),t[1]) for t in TEMPLATES], {
+      'JOB': [j for j in JOBS],
+      'LABEL': [l for l in LABELS],
+      })
+    
+    def bert_model(prompt, text):
+      res = model(f"{prompt}. {text}")
+      tot = sum([l['score'] for l in res])
+      return str([(l['token_str'],round(l['score']/tot,4)) for l in res])
+
+    ResponseGenerator.generate("bert_results.csv", bert_data, [("none","none")],
+          bert_model,
+          save_every=100
+    )
+  
+  else:
+
+    data = DataGenerator.generate(TEMPLATES, {
+      'JOB': [j for j in JOBS],
+      'LABEL': [l for l in LABELS],
+      })
+
+    ResponseGenerator.generate("llama_results.csv", data, prompts,
+                                lambda prompt, text: ollama.chat(model='llama3:instruct', messages=[
+          { 'role': 'system', 'content': prompt, },
+          { 'role': 'user', 'content': text, },
+          ])['message']['content'],
+          save_every=10
+    )
