@@ -2,9 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def group_count(df, by='response', n=10, hue=None, others=True):
+def group_count(df, by, n=10, hue=None, others=True, normalize=False):
 
     def gc(df, h=None):
+        # def fix_col(c):
+        #     if 'proportion' in c.columns:
+        #         c = c.rename({'count':'proportion'}, axis=1)
+        #     return c
         _c = df[[by]] if h is None else df[[by,hue]]
         if n <= 0:
             return _c.value_counts().sort_values(ascending=False).to_frame().reset_index()
@@ -15,6 +19,7 @@ def group_count(df, by='response', n=10, hue=None, others=True):
                 c.loc[len(c)] = ['OTHERS', df.shape[0] - c['count'].sum()]
             else:
                 c.loc[len(c)] = ['OTHERS', h, df.shape[0] - c['count'].sum()]
+        
         return c
     
     if hue is not None:
@@ -22,40 +27,55 @@ def group_count(df, by='response', n=10, hue=None, others=True):
         for h in df[hue].unique():
             if c is None:
                 c = gc(df[df[hue] == h], h=h)
+                c['proportion_hue'] = c['count'] / df[df[hue] == h].shape[0]
             else:
                 _c = gc(df[df[hue] == h], h=h)
+                _c['proportion_hue'] = _c['count'] / df[df[hue] == h].shape[0]
                 c = pd.concat([c, _c])
         c = c.reset_index(drop=True)
+        c['proportion_by'] = c.apply(lambda x: x['count'] / df[df[by] == x[by]].shape[0], axis=1)
     else:
         c = gc(df)
+        c['proportion'] = c['count'] / df.shape[0]
 
     return c
 
-def plot_df(df, by='response', n=10, hue='prompt_id', others=True):
+def plot_df(df, by, n=10, hue='prompt_id', others=True, title='', plots='012', normalize=False, count='count'):
 
     df = df.copy()
+    if title != '':
+        title = f" - {title}"
     # if hue is not None and hue_contains is not None:
     #     df = df[df[hue].str.contains(hue_contains)]
 
     n_str = '' if n <= 0 else f"{n}"
 
-    c = group_count(df, by=by, n=n, others=others)
-    sns.barplot(data=c, x='count', y=by)
-    plt.title(f"Top {n_str} {by}")
-    plt.show()
+    if '0' in plots:
+        c = group_count(df, by, n=n, others=others, normalize=normalize)
+        c = c.sort_values(by=count, ascending=False)
+        sns.barplot(data=c, x=count, y=by)
+        plt.title(f"Top {n_str} {by}{title}")
+        plt.show()
 
-    cs = group_count(df, by=by, n=-1, others=others)['count'].cumsum()
-    ax = sns.lineplot(cs)
-    ax.set_xticks([])
-    plt.title(f'{by} cumulatively')
-    plt.show()
+    if '1' in plots:
+        cs = group_count(df, by, n=-1, others=others, normalize=normalize)[count].cumsum()
+        ax = sns.lineplot(cs)
+        ax.set_xticks([])
+        plt.title(f'{by} cumulatively{title}')
+        plt.show()
 
     if hue is None:
         return
-    c = group_count(df, by=by, n=n, hue=hue, others=others)
-    sns.barplot(data=c, x='count', y=by, hue=hue)
-    plt.title(f"Top {n_str} {by} by {hue}")
-    plt.show()
+    if '2' in plots:
+        c = group_count(df, by, n=n, hue=hue, others=others, normalize=normalize)
+        c = c.sort_values(by=count, ascending=False)
+        if hue == 'response':
+            palette ={"neutral": "grey", "male": "C0", "female": "C3"}
+            sns.barplot(data=c, x=count, y=by, hue=hue, palette=palette)
+        else:
+            sns.barplot(data=c, x=count, y=by, hue=hue)
+        plt.title(f"Top {n_str} {by} by {hue}{title}")
+        plt.show()
 
 VALID = ['he','she','they','male','female','both','neutral']
 
@@ -134,7 +154,7 @@ def normalize_labels(df):
     df = df.dropna()
     return df
 
-def  plot_compare_df(original, fixed, hue='prompt_id'):
+def plot_compare_df(original, fixed, hue='prompt_id'):
     df_fix_cmp = pd.DataFrame({hue:[],"df":[],"count":[]})
     for p in original[hue].unique():
         df_fix_cmp = pd.concat([df_fix_cmp, pd.DataFrame({hue:[p],"df":["original"],"count":[original[original[hue] == p].shape[0]]})])
@@ -143,3 +163,19 @@ def  plot_compare_df(original, fixed, hue='prompt_id'):
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
     plt.title('Original vs Fixed')
     plt.show()
+
+def df_filter(df, by, contains):
+    return df[df[by].str.contains(contains)]
+
+def pivot_df(df, index, on, value):
+    res = None
+    for j in df[index].unique():
+        _df = {index: [j],}
+        _df.update({r: [None] for r in df[on].unique()})
+        for i,r in df[df[index] == j].iterrows():
+            _df[r[on]] = r[value]
+        if res is None:
+            res = pd.DataFrame(_df)
+        else:
+            res = pd.concat([res, pd.DataFrame(_df)])
+    return res
