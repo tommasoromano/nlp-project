@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def group_count(df, by, n=10, hue=None, others=True, normalize=False):
+def group_count(df, by, n=10, hue=None, others=True):
 
     def gc(df, h=None):
         # def fix_col(c):
@@ -40,7 +40,7 @@ def group_count(df, by, n=10, hue=None, others=True, normalize=False):
 
     return c
 
-def plot_df(df, by, n=10, hue='prompt_id', others=True, title='', plots='012', normalize=False, count='count'):
+def plot_df(df, by, n=10, hue='prompt_id', others=True, title='', plots='012', count='count'):
 
     df = df.copy()
     if title != '':
@@ -51,14 +51,14 @@ def plot_df(df, by, n=10, hue='prompt_id', others=True, title='', plots='012', n
     n_str = '' if n <= 0 else f"{n}"
 
     if '0' in plots:
-        c = group_count(df, by, n=n, others=others, normalize=normalize)
+        c = group_count(df, by, n=n, others=others)
         c = c.sort_values(by=count, ascending=False)
         sns.barplot(data=c, x=count, y=by)
         plt.title(f"Top {n_str} {by}{title}")
         plt.show()
 
     if '1' in plots:
-        cs = group_count(df, by, n=-1, others=others, normalize=normalize)[count].cumsum()
+        cs = group_count(df, by, n=-1, others=others)[count].cumsum()
         ax = sns.lineplot(cs)
         ax.set_xticks([])
         plt.title(f'{by} cumulatively{title}')
@@ -67,7 +67,7 @@ def plot_df(df, by, n=10, hue='prompt_id', others=True, title='', plots='012', n
     if hue is None:
         return
     if '2' in plots:
-        c = group_count(df, by, n=n, hue=hue, others=others, normalize=normalize)
+        c = group_count(df, by, n=n, hue=hue, others=others)
         c = c.sort_values(by=count, ascending=False)
         if hue == 'response':
             palette ={"neutral": "grey", "male": "C0", "female": "C3"}
