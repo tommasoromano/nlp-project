@@ -33,7 +33,8 @@ if __name__ == '__main__':
   prompt_dict = Utils.list_to_dict(pd.read_csv('data/prompts.csv').values.tolist())
   prompts = PromptGenerator.generate(prompt_dict, [
                                       ['mask-zsl'],
-                                      ['label-zsl']
+                                      ['label-zsl'],
+                                      ['name-zsl'],
                                       ])
   
   texts = pd.read_csv('data/templates.csv').values.tolist()
