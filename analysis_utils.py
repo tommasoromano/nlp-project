@@ -91,6 +91,7 @@ with open('data/first_names_h_n.json') as f:
 with open('data/first_names_o_z.json') as f:
    ALL_NAMES.update(json.load(f))
 
+palette ={"neutral": "grey", "male": "C0", "female": "C3"}
 
 def fix_responses(_df):
     df = _df.copy()
