@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import json
 
 def group_count(df, by, n=10, hue=None, others=True):
 
@@ -40,7 +41,7 @@ def group_count(df, by, n=10, hue=None, others=True):
 
     return c
 
-def plot_df(df, by, n=10, hue='prompt_id', others=True, title='', plots='012', count='count'):
+def plot_df(df, by, hue=None, n=10, others=True, title='', plots='012', count='count'):
 
     df = df.copy()
     if title != '':
@@ -82,8 +83,37 @@ VALID = ['he','she','they','male','female','both','neutral']
 def not_valid(df):
     return df[~df['response'].isin(VALID)]
 
+ALL_NAMES = {}
+with open('data/first_names_a_g.json') as f:
+   ALL_NAMES.update(json.load(f))
+with open('data/first_names_h_n.json') as f:
+   ALL_NAMES.update(json.load(f))
+with open('data/first_names_o_z.json') as f:
+   ALL_NAMES.update(json.load(f))
+
+
 def fix_responses(_df):
     df = _df.copy()
+    def f_names(x):
+        def f(n):
+            _f = ALL_NAMES[n]['gender']['F'] if 'F' in ALL_NAMES[n]['gender'] else 0.0
+            _m = ALL_NAMES[n]['gender']['M'] if 'M' in ALL_NAMES[n]['gender'] else 0.0
+            return 'male' if _m > _f else 'female'
+            if f_m in ALL_NAMES[n]['gender']:
+                return ALL_NAMES[n]['gender'][f_m]
+            else:
+                return 0.0
+        if x in ALL_NAMES:
+            return f(x)
+        else:
+            wrds = x.split(' ')
+            if len(wrds) < 5:
+                for w in wrds:
+                    if w in ALL_NAMES:
+                        return f(w)
+            # print(x)
+        return x
+    
     def f(r):
         W = ['i','you','someone','the','neither','one','he/she','he/she/they','he/she/it']
         r = r.replace('"','').replace(':','').replace('*','').replace('[','').replace(']','')
@@ -135,6 +165,7 @@ def fix_responses(_df):
         #     if words.startswith(w):
         #         return 'they'
         return r
+    df['response'] = df.apply(lambda x: f_names(x['response']), axis=1)
     df['response'] = df.apply(lambda x: f(x['response']), axis=1)
     return df
 
