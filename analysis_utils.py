@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import json
 
-def group_count(df, by, n=10, hue=None, others=True):
+def group_count(df, by, n=10, hue=None, others=True, ascending=False):
 
     def gc(df, h=None):
         # def fix_col(c):
@@ -12,9 +12,9 @@ def group_count(df, by, n=10, hue=None, others=True):
         #     return c
         _c = df[[by]] if h is None else df[[by,hue]]
         if n <= 0:
-            return _c.value_counts().sort_values(ascending=False).to_frame().reset_index()
+            return _c.value_counts().sort_values(ascending=ascending).to_frame().reset_index()
         else:
-            c = _c.value_counts().sort_values(ascending=False)[:n].to_frame().reset_index()
+            c = _c.value_counts().sort_values(ascending=ascending)[:n].to_frame().reset_index()
         if df.shape[0] - c['count'].sum() > 0 and others:
             if h is None:
                 c.loc[len(c)] = ['OTHERS', df.shape[0] - c['count'].sum()]
@@ -35,13 +35,14 @@ def group_count(df, by, n=10, hue=None, others=True):
                 c = pd.concat([c, _c])
         c = c.reset_index(drop=True)
         c['proportion_by'] = c.apply(lambda x: x['count'] / df[df[by] == x[by]].shape[0], axis=1)
+        c['proportion_all'] = c['proportion_by'] * c['proportion_hue']
     else:
         c = gc(df)
         c['proportion'] = c['count'] / df.shape[0]
 
     return c
 
-def plot_df(df, by, hue=None, n=10, others=True, title='', plots='012', count='count'):
+def plot_df(df, by, hue=None, n=10, others=True, title='', plots='012', count='count', ascending=False, out_legend=False):
 
     df = df.copy()
     if title != '':
@@ -52,14 +53,14 @@ def plot_df(df, by, hue=None, n=10, others=True, title='', plots='012', count='c
     n_str = '' if n <= 0 else f"{n}"
 
     if '0' in plots:
-        c = group_count(df, by, n=n, others=others)
-        c = c.sort_values(by=count, ascending=False)
-        sns.barplot(data=c, x=count, y=by)
+        c = group_count(df, by, n=n, others=others, ascending=ascending)
+        c = c.sort_values(by=count, ascending=ascending)
+        ax = sns.barplot(data=c, x=count, y=by)
         plt.title(f"Top {n_str} {by}{title}")
         plt.show()
 
     if '1' in plots:
-        cs = group_count(df, by, n=-1, others=others)[count].cumsum()
+        cs = group_count(df, by, n=-1, others=others, ascending=ascending)[count].cumsum()
         ax = sns.lineplot(cs)
         ax.set_xticks([])
         plt.title(f'{by} cumulatively{title}')
@@ -68,14 +69,15 @@ def plot_df(df, by, hue=None, n=10, others=True, title='', plots='012', count='c
     if hue is None:
         return
     if '2' in plots:
-        c = group_count(df, by, n=n, hue=hue, others=others)
-        c = c.sort_values(by=count, ascending=False)
+        c = group_count(df, by, n=n, hue=hue, others=others, ascending=ascending)
+        c = c.sort_values(by=count, ascending=ascending)
         if hue == 'response':
             palette ={"neutral": "grey", "male": "C0", "female": "C3"}
-            sns.barplot(data=c, x=count, y=by, hue=hue, palette=palette)
+            ax = sns.barplot(data=c, x=count, y=by, hue=hue, palette=palette)
         else:
-            sns.barplot(data=c, x=count, y=by, hue=hue)
+            ax = sns.barplot(data=c, x=count, y=by, hue=hue)
         plt.title(f"Top {n_str} {by} by {hue}{title}")
+        out_legend and sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
         plt.show()
 
 VALID = ['he','she','they','male','female','both','neutral']
@@ -194,6 +196,7 @@ def plot_compare_df(original, fixed, hue='prompt_id'):
     ax = sns.barplot(data=df_fix_cmp, y='count', x=hue, hue='df')
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
     plt.title('Original vs Fixed')
+    plt.xticks(rotation=90)
     plt.show()
 
 def df_filter(df, by, contains):
