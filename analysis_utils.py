@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import json
+import spacy
 
 def group_count(df, by, n=10, hue=None, others=True, ascending=False):
 
@@ -80,7 +81,7 @@ def plot_df(df, by, hue=None, n=10, others=True, title='', plots='012', count='c
         out_legend and sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
         plt.show()
 
-VALID = ['he','she','they','male','female','both','neutral']
+VALID = ['he','she','they','male','female','both','neutral','their']
 
 def not_valid(df):
     return df[~df['response'].isin(VALID)]
@@ -95,27 +96,28 @@ with open('data/first_names_o_z.json') as f:
 
 palette ={"neutral": "grey", "male": "C0", "female": "C3"}
 
+def _f_names(x):
+    def f(n):
+        _f = ALL_NAMES[n]['gender']['F'] if 'F' in ALL_NAMES[n]['gender'] else 0.0
+        _m = ALL_NAMES[n]['gender']['M'] if 'M' in ALL_NAMES[n]['gender'] else 0.0
+        return 'male' if _m > _f else 'female'
+        if f_m in ALL_NAMES[n]['gender']:
+            return ALL_NAMES[n]['gender'][f_m]
+        else:
+            return 0.0
+    if x in ALL_NAMES:
+        return f(x)
+    else:
+        wrds = x.split(' ')
+        if len(wrds) < 5:
+            for w in wrds:
+                if w in ALL_NAMES:
+                    return f(w)
+        # print(x)
+    return x
+
 def fix_responses(_df):
     df = _df.copy()
-    def f_names(x):
-        def f(n):
-            _f = ALL_NAMES[n]['gender']['F'] if 'F' in ALL_NAMES[n]['gender'] else 0.0
-            _m = ALL_NAMES[n]['gender']['M'] if 'M' in ALL_NAMES[n]['gender'] else 0.0
-            return 'male' if _m > _f else 'female'
-            if f_m in ALL_NAMES[n]['gender']:
-                return ALL_NAMES[n]['gender'][f_m]
-            else:
-                return 0.0
-        if x in ALL_NAMES:
-            return f(x)
-        else:
-            wrds = x.split(' ')
-            if len(wrds) < 5:
-                for w in wrds:
-                    if w in ALL_NAMES:
-                        return f(w)
-            # print(x)
-        return x
     
     def f(r):
         W = ['i','you','someone','the','neither','one','he/she','he/she/they','he/she/it']
@@ -168,9 +170,59 @@ def fix_responses(_df):
         #     if words.startswith(w):
         #         return 'they'
         return r
-    df['response'] = df.apply(lambda x: f_names(x['response']), axis=1)
+    df['response'] = df.apply(lambda x: _f_names(x['response']), axis=1)
     df['response'] = df.apply(lambda x: f(x['response']), axis=1)
     return df
+
+def fix_gemma2(df):
+    def _fix_gemma2(x):
+        r = str(x['response']).replace('\t','').replace('\n','').replace(' ','')
+        if '/' in r:
+            return 'neutral'
+        for v in VALID:
+            if r.startswith(v):
+                return v
+        tkn = '\t'
+        for ln in [
+            f"**{tkn}**",
+            ]:
+            for v in VALID:
+                if ln.replace(tkn, v) in r:
+                    return v
+        return r
+    df_fix = df.copy()
+    df_fix['response'] = df_fix.apply(lambda x: _f_names(x['response']) if 'name' in x['prompt_id'] else x['response'], axis=1)
+    df_fix['response'] = df_fix.apply(lambda x: _fix_gemma2(x), axis=1)
+    return df_fix
+
+def fix_spacy(df):
+    nlp = spacy.load("en_core_web_lg")
+
+    _df = df.copy()
+    def _sim(x):
+        resp = nlp(u"{}".format(x['response']))
+        res = [0.0,""]
+        for valid in VALID:
+            valid_ = nlp(u"{}".format(valid))
+            cosine = resp.similarity(valid_)
+            if cosine > res[0]:
+                res = [cosine, valid]
+        if res[0] < 0.7:
+            # for w in ['impossible to determine','provide me with the text']:
+            #     w_ = nlp(u"{}".format(w))
+            #     cosine = resp.similarity(w_)
+            #     if cosine > res[0]:
+            #         res = [cosine, w]
+            # if res[0] < 0.7:
+            #     return res
+            # else:
+            #     return None
+            return None
+        else:
+            return None
+    _df['similarity'] = _df.apply(lambda x: _sim(x), axis=1)
+    _df.dropna(subset=['similarity'], inplace=True)
+    return _df
 
 def normalize_labels(df):
     df = df.copy()

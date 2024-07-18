@@ -33,7 +33,9 @@ if __name__ == '__main__':
   prompt_dict = Utils.list_to_dict(pd.read_csv('data/prompts.csv').values.tolist())
   prompts = PromptGenerator.generate(prompt_dict, [
                                       ['mask-zsl'],
+                                      ['mask-neutral-zsl'],
                                       ['label-zsl'],
+                                      ['label-neutral-zsl'],
                                       ['name-zsl'],
                                       ])
   
@@ -64,9 +66,12 @@ if __name__ == '__main__':
       'JOB': [j for j in JOBS],
       'LABEL': [l for l in LABELS],
       })
-
-    ResponseGenerator.generate("llama_results.csv", data, prompts,
-                                lambda prompt, text: ollama.chat(model='llama3:instruct', messages=[
+    model = 'llama3:instruct'
+    model = 'mistral'
+    model = 'phi3:medium'
+    model = 'gemma2'
+    ResponseGenerator.generate(model.replace(':','_')+"_results.csv", data, prompts,
+                                lambda prompt, text: ollama.chat(model=model, messages=[
           { 'role': 'system', 'content': prompt, },
           { 'role': 'user', 'content': text, },
           ])['message']['content'],

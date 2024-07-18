@@ -7,3 +7,5 @@ torch
 matplotlib
 seaborn
 scipy
+nltk
+spacy
